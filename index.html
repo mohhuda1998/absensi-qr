@@ -3,99 +3,108 @@
 <head>
 
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
-
-<title>Absensi QR Live</title>
+<title>Absensi QR</title>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <style>
 
-body{
-    margin:0;
-    padding:15px;
-    font-family:Arial,sans-serif;
-    background:#f1f5f9;
+* {
+    box-sizing: border-box;
 }
 
-.container{
-    max-width:500px;
-    margin:auto;
+body {
+    margin: 0;
+    padding: 15px;
+    font-family: Arial, sans-serif;
+    background: #f1f5f9;
 }
 
-.card{
-    background:white;
-    padding:20px;
-    border-radius:18px;
-    box-shadow:0 4px 15px rgba(0,0,0,.12);
+.container {
+    max-width: 500px;
+    margin: auto;
 }
 
-h1{
-    text-align:center;
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 18px;
+    box-shadow: 0 4px 15px rgba(0,0,0,.12);
 }
 
-.subtitle{
-    text-align:center;
-    color:#666;
+h1 {
+    text-align: center;
+    margin: 5px 0;
 }
 
-#reader{
-    width:100%;
-    margin-top:20px;
+.subtitle {
+    text-align: center;
+    color: #666;
+    margin-bottom: 15px;
 }
 
-.status{
-    margin-top:15px;
-    padding:15px;
-    border-radius:12px;
-    text-align:center;
-    font-weight:bold;
+#reader {
+    width: 100%;
+    margin-top: 15px;
 }
 
-.info{
-    background:#dbeafe;
-    color:#1e40af;
+.status {
+    margin-top: 15px;
+    padding: 15px;
+    border-radius: 12px;
+    text-align: center;
+    font-weight: bold;
 }
 
-.success{
-    background:#dcfce7;
-    color:#166534;
+.info {
+    background: #dbeafe;
+    color: #1e40af;
 }
 
-.error{
-    background:#fee2e2;
-    color:#991b1b;
+.success {
+    background: #dcfce7;
+    color: #166534;
 }
 
-.warning{
-    background:#fef3c7;
-    color:#92400e;
+.error {
+    background: #fee2e2;
+    color: #991b1b;
 }
 
-.hasil{
-    margin-top:15px;
-    padding:15px;
-    background:#f8fafc;
-    border-radius:10px;
-    line-height:1.8;
+.warning {
+    background: #fef3c7;
+    color: #92400e;
 }
 
-button{
-    width:100%;
-    padding:14px;
-    margin-top:15px;
-    border:0;
-    border-radius:10px;
-    background:#2563eb;
-    color:white;
-    font-size:17px;
-    font-weight:bold;
+.hasil {
+    margin-top: 15px;
+    padding: 15px;
+    border-radius: 12px;
+    background: #f8fafc;
+    line-height: 1.8;
 }
 
-.hidden{
-    display:none;
+button {
+    width: 100%;
+    padding: 14px;
+    margin-top: 15px;
+    border: 0;
+    border-radius: 10px;
+    background: #2563eb;
+    color: white;
+    font-size: 17px;
+    font-weight: bold;
+}
+
+.hidden {
+    display: none;
+}
+
+.qr-code {
+    font-size: 22px;
+    font-weight: bold;
 }
 
 </style>
@@ -111,25 +120,25 @@ button{
 <h1>📋 ABSENSI QR</h1>
 
 <div class="subtitle">
-Kamera tetap aktif untuk scan berulang
+Kamera LIVE • Scan QR otomatis
 </div>
 
 <div id="reader"></div>
 
 <div id="status"
-class="status info">
+     class="status info">
 
-📷 Tekan MULAI KAMERA
+📷 Tekan tombol MULAI KAMERA
 
 </div>
 
 <div id="hasil"
-class="hasil hidden">
+     class="hasil hidden">
 </div>
 
 <button
-id="startButton"
-onclick="startCamera()">
+    id="startButton"
+    onclick="mulaiKamera()">
 
 📷 MULAI KAMERA
 
@@ -144,19 +153,29 @@ onclick="startCamera()">
 
 /*
 ====================================================
-APPS SCRIPT BARU
+APPS SCRIPT
 ====================================================
 */
 
 const API_URL =
-"https://script.google.com/macros/s/AKfycbzyWUfIUFkJQgaInbXYf-69VCnCFCxRSwrF8b5Eu0t4F2ZqntkNc5Q4eCNLSvDNEqxspw/exec";
+"https://script.google.com/macros/s/AKfycbwd3HoNTw4igYBKxjsJoNuQtWQmprQuSAcj32nLiUl3hYZU61Yb14LbTXnIq-5IwYYgdg/exec";
 
+
+/*
+====================================================
+VARIABEL
+====================================================
+*/
 
 let scanner = null;
 
+let kameraAktif = false;
+
 let sedangProses = false;
 
-let kameraAktif = false;
+let qrTerakhir = "";
+
+let waktuScanTerakhir = 0;
 
 
 /*
@@ -165,15 +184,15 @@ STATUS
 ====================================================
 */
 
-function setStatus(text,type){
+function status(text, tipe) {
 
-    const status =
-    document.getElementById("status");
+    const el =
+        document.getElementById("status");
 
-    status.innerHTML = text;
+    el.innerHTML = text;
 
-    status.className =
-    "status " + type;
+    el.className =
+        "status " + tipe;
 }
 
 
@@ -183,83 +202,85 @@ MULAI KAMERA
 ====================================================
 */
 
-function startCamera(){
+function mulaiKamera() {
 
-    if(kameraAktif){
+    if (kameraAktif) {
         return;
     }
 
-    setStatus(
+
+    status(
         "⏳ Membuka kamera...",
         "info"
     );
 
 
     scanner =
-    new Html5Qrcode("reader");
+        new Html5Qrcode("reader");
 
 
     const config = {
 
-        fps:10,
+        fps: 10,
 
-        qrbox:{
-            width:250,
-            height:250
-        },
-
-        aspectRatio:1.0
+        qrbox: {
+            width: 250,
+            height: 250
+        }
 
     };
 
 
     scanner.start(
 
-        {facingMode:"environment"},
+        {
+            facingMode: "environment"
+        },
 
         config,
 
-        function(decodedText){
+        function(decodedText) {
 
-            if(sedangProses){
-                return;
-            }
-
-            sedangProses = true;
-
-            console.log(
-                "QR TERBACA:",
-                decodedText
-            );
-
-
-            kirimServer(decodedText);
+            bacaQR(decodedText);
 
         },
 
-        function(errorMessage){
+        function(errorMessage) {
 
-            // abaikan error scanner
+            // Error scan diabaikan
 
         }
 
     )
 
-    .then(function(){
+    .then(function() {
 
         kameraAktif = true;
 
-        setStatus(
+        status(
             "🟢 KAMERA LIVE<br>" +
             "Arahkan QR ke kotak",
             "success"
         );
 
+
+        document
+            .getElementById("startButton")
+            .style.display = "none";
+
     })
 
-    .catch(function(){
+    .catch(function(error) {
+
+        console.error(error);
 
         scanner = null;
+
+        /*
+        ============================================
+        FALLBACK CAMERA
+        ============================================
+        */
 
         bukaKameraFallback();
 
@@ -274,179 +295,387 @@ FALLBACK CAMERA
 ====================================================
 */
 
-function bukaKameraFallback(){
+function bukaKameraFallback() {
 
-    setStatus(
+    status(
         "⏳ Mencari kamera...",
         "info"
     );
 
 
     Html5Qrcode
-    .getCameras()
+        .getCameras()
 
-    .then(function(cameras){
+        .then(function(cameras) {
 
-        if(!cameras || cameras.length === 0){
+            if (
+                !cameras ||
+                cameras.length === 0
+            ) {
 
-            setStatus(
-                "❌ Tidak ada kamera.",
-                "error"
-            );
+                status(
+                    "❌ Kamera tidak ditemukan",
+                    "error"
+                );
 
-            return;
-        }
-
-
-        scanner =
-        new Html5Qrcode("reader");
-
-
-        scanner.start(
-
-            cameras[0].id,
-
-            {
-                fps:10,
-
-                qrbox:{
-                    width:250,
-                    height:250
-                }
-            },
-
-            function(decodedText){
-
-                if(sedangProses){
-                    return;
-                }
-
-                sedangProses = true;
-
-                kirimServer(decodedText);
-
-            },
-
-            function(errorMessage){
-
-                // abaikan
-
+                return;
             }
 
-        )
 
-        .then(function(){
+            scanner =
+                new Html5Qrcode("reader");
 
-            kameraAktif = true;
 
-            setStatus(
-                "🟢 KAMERA LIVE<br>" +
-                "Arahkan QR ke kotak",
-                "success"
-            );
+            scanner.start(
+
+                cameras[0].id,
+
+                {
+                    fps: 10,
+
+                    qrbox: {
+                        width: 250,
+                        height: 250
+                    }
+                },
+
+                function(decodedText) {
+
+                    bacaQR(decodedText);
+
+                },
+
+                function(errorMessage) {
+
+                    // abaikan
+
+                }
+
+            )
+
+            .then(function() {
+
+                kameraAktif = true;
+
+                status(
+                    "🟢 KAMERA LIVE<br>" +
+                    "Arahkan QR ke kotak",
+                    "success"
+                );
+
+
+                document
+                    .getElementById("startButton")
+                    .style.display = "none";
+
+            })
+
+            .catch(function(error) {
+
+                scanner = null;
+
+                status(
+                    "❌ Kamera gagal dibuka<br><br>" +
+                    error,
+                    "error"
+                );
+
+            });
 
         })
 
-        .catch(function(error){
+        .catch(function(error) {
 
-            scanner = null;
-
-            setStatus(
-                "❌ Kamera gagal dibuka<br><br>" +
+            status(
+                "❌ Tidak dapat mengakses kamera<br><br>" +
                 error,
                 "error"
             );
 
         });
 
-    })
+}
 
-    .catch(function(error){
 
-        setStatus(
-            "❌ Tidak dapat mengakses kamera<br><br>" +
-            error,
-            "error"
-        );
+/*
+====================================================
+QR TERBACA
+====================================================
+*/
 
-    });
+function bacaQR(kode) {
+
+    const sekarang =
+        Date.now();
+
+
+    /*
+    Jangan proses QR yang sama
+    berulang-ulang dalam 3 detik.
+    */
+
+    if (
+        kode === qrTerakhir &&
+        sekarang - waktuScanTerakhir < 3000
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+    Jika server sedang memproses,
+    jangan menerima QR baru.
+    */
+
+    if (sedangProses) {
+
+        return;
+
+    }
+
+
+    qrTerakhir = kode;
+
+    waktuScanTerakhir = sekarang;
+
+    sedangProses = true;
+
+
+    console.log(
+        "QR TERBACA:",
+        kode
+    );
+
+
+    /*
+    Tampilkan QR
+    */
+
+    const hasil =
+        document.getElementById("hasil");
+
+
+    hasil.classList.remove("hidden");
+
+
+    hasil.innerHTML =
+
+        "<b>QR TERBACA</b><br>" +
+
+        "<span class='qr-code'>" +
+        aman(kode) +
+        "</span><br><br>" +
+
+        "⏳ Menghubungkan ke server...";
+
+
+    status(
+        "🔲 QR TERBACA<br>" +
+        "☁️ Mengirim ke server...",
+        "info"
+    );
+
+
+    /*
+    LANGSUNG KIRIM KE SERVER
+    KAMERA TETAP LIVE
+    */
+
+    kirimKeServer(kode);
 
 }
 
 
 /*
 ====================================================
-KIRIM KE SERVER
+KIRIM KE APPS SCRIPT
 ====================================================
 */
 
-function kirimServer(kode){
-
-    setStatus(
-        "⏳ QR TERBACA<br>" +
-        "Memeriksa server...",
-        "info"
-    );
-
+function kirimKeServer(kode) {
 
     const callbackName =
-    "absensi_" + Date.now();
+        "absensiCallback_" +
+        Date.now();
 
+
+    /*
+    Callback JSONP
+    */
 
     window[callbackName] =
-    function(data){
+        function(data) {
 
-        console.log(
-            "SERVER:",
-            data
-        );
-
-
-        tampilkanHasil(data);
+            console.log(
+                "RESPON SERVER:",
+                data
+            );
 
 
-        delete window[callbackName];
+            tampilkanHasil(data);
 
-    };
 
+            try {
+
+                delete window[callbackName];
+
+            } catch (e) {}
+
+        };
+
+
+    /*
+    Buat script request
+    */
 
     const script =
-    document.createElement("script");
+        document.createElement("script");
 
 
     script.src =
-    API_URL +
-    "?action=absen" +
-    "&id=" +
-    encodeURIComponent(kode) +
-    "&callback=" +
-    callbackName;
+        API_URL +
+
+        "?action=absen" +
+
+        "&id=" +
+        encodeURIComponent(kode) +
+
+        "&callback=" +
+        encodeURIComponent(callbackName);
 
 
-    script.onerror =
-    function(){
+    /*
+    Timeout
+    */
 
-        setStatus(
-            "❌ SERVER TIDAK TERHUBUNG",
-            "error"
-        );
-
-        delete window[callbackName];
+    let selesai = false;
 
 
-        setTimeout(function(){
+    const timer =
+        setTimeout(function() {
+
+            if (selesai) {
+                return;
+            }
+
+
+            selesai = true;
+
+
+            status(
+                "❌ SERVER TIDAK MERESPONS",
+                "error"
+            );
+
+
+            const hasil =
+                document.getElementById("hasil");
+
+
+            hasil.classList.remove("hidden");
+
+
+            hasil.innerHTML =
+
+                "<b>QR:</b> " +
+                aman(kode) +
+
+                "<br><br>" +
+
+                "Server tidak memberikan respons.";
+
 
             sedangProses = false;
 
-            setStatus(
-                "🟢 KAMERA LIVE<br>" +
-                "Silakan scan QR berikutnya",
-                "success"
+
+            try {
+
+                delete window[callbackName];
+
+            } catch (e) {}
+
+
+        }, 10000);
+
+
+    /*
+    Callback wrapper
+    */
+
+    const callbackAsli =
+        window[callbackName];
+
+
+    window[callbackName] =
+        function(data) {
+
+            if (selesai) {
+                return;
+            }
+
+
+            selesai = true;
+
+            clearTimeout(timer);
+
+
+            callbackAsli(data);
+
+        };
+
+
+    /*
+    Jika request gagal
+    */
+
+    script.onerror =
+        function() {
+
+            if (selesai) {
+                return;
+            }
+
+
+            selesai = true;
+
+            clearTimeout(timer);
+
+
+            status(
+                "❌ TIDAK DAPAT TERHUBUNG KE SERVER",
+                "error"
             );
 
-        },2000);
 
-    };
+            const hasil =
+                document.getElementById("hasil");
+
+
+            hasil.classList.remove("hidden");
+
+
+            hasil.innerHTML =
+
+                "<b>QR:</b> " +
+                aman(kode) +
+
+                "<br><br>" +
+
+                "Koneksi ke Apps Script gagal.";
+
+
+            sedangProses = false;
+
+
+            try {
+
+                delete window[callbackName];
+
+            } catch (e) {}
+
+        };
 
 
     document.body.appendChild(script);
@@ -456,84 +685,132 @@ function kirimServer(kode){
 
 /*
 ====================================================
-HASIL ABSENSI
+HASIL DARI SERVER
 ====================================================
 */
 
-function tampilkanHasil(data){
+function tampilkanHasil(data) {
 
     const hasil =
-    document.getElementById("hasil");
+        document.getElementById("hasil");
 
 
     hasil.classList.remove("hidden");
 
 
-    if(data.success){
+    /*
+    ================================================
+    BERHASIL
+    ================================================
+    */
 
-        setStatus(
+    if (data.success) {
+
+        status(
             "✅ ABSENSI BERHASIL<br>" +
-            "Kamera tetap LIVE",
+            "KAMERA TETAP LIVE",
             "success"
         );
 
 
         hasil.innerHTML =
 
-        "<b>ID:</b> " +
-        aman(data.id) +
+            "<b>✅ ABSENSI BERHASIL</b><br><br>" +
 
-        "<br><b>Nama:</b> " +
-        aman(data.nama) +
+            "<b>ID:</b> " +
+            aman(data.id) +
 
-        "<br><b>Kelas:</b> " +
-        aman(data.kelas) +
+            "<br>" +
 
-        "<br><b>Tanggal:</b> " +
-        aman(data.tanggal) +
+            "<b>Nama:</b> " +
+            aman(data.nama) +
 
-        "<br><b>Jam:</b> " +
-        aman(data.jam);
+            "<br>" +
+
+            "<b>Kelas:</b> " +
+            aman(data.kelas) +
+
+            "<br>" +
+
+            "<b>Tanggal:</b> " +
+            aman(data.tanggal) +
+
+            "<br>" +
+
+            "<b>Jam:</b> " +
+            aman(data.jam);
+
 
     }
 
 
-    else if(data.duplicate){
+    /*
+    ================================================
+    DUPLIKAT
+    ================================================
+    */
 
-        setStatus(
+    else if (data.duplicate) {
+
+        status(
             "⚠️ SUDAH ABSEN<br>" +
-            "Kamera tetap LIVE",
+            "KAMERA TETAP LIVE",
             "warning"
         );
 
 
         hasil.innerHTML =
 
-        "<b>Nama:</b> " +
-        aman(data.nama) +
+            "<b>⚠️ ABSEN GANDA</b><br><br>" +
 
-        "<br><b>Kelas:</b> " +
-        aman(data.kelas) +
+            "<b>ID:</b> " +
+            aman(data.id) +
 
-        "<br><br>" +
+            "<br>" +
 
-        "Siswa sudah melakukan " +
-        "absensi hari ini.";
+            "<b>Nama:</b> " +
+            aman(data.nama) +
+
+            "<br>" +
+
+            "<b>Kelas:</b> " +
+            aman(data.kelas) +
+
+            "<br><br>" +
+
+            "Siswa sudah melakukan " +
+            "absensi hari ini.";
+
 
     }
 
 
-    else{
+    /*
+    ================================================
+    GAGAL
+    ================================================
+    */
 
-        setStatus(
+    else {
+
+        status(
             "❌ ABSENSI GAGAL<br>" +
-            "Kamera tetap LIVE",
+            "KAMERA TETAP LIVE",
             "error"
         );
 
 
         hasil.innerHTML =
-        aman(data.message);
+
+            "<b>QR:</b> " +
+            aman(data.id) +
+
+            "<br><br>" +
+
+            aman(
+                data.message ||
+                "Data tidak valid."
+            );
 
     }
 
@@ -544,19 +821,19 @@ function tampilkanHasil(data){
     ================================================
     */
 
-    setTimeout(function(){
+    setTimeout(function() {
 
         hasil.classList.add("hidden");
 
         sedangProses = false;
 
-        setStatus(
+        status(
             "🟢 KAMERA LIVE<br>" +
             "Silakan scan QR berikutnya",
             "success"
         );
 
-    },2500);
+    }, 3000);
 
 }
 
@@ -567,26 +844,44 @@ AMANKAN TEXT
 ====================================================
 */
 
-function aman(text){
+function aman(text) {
 
-    if(
+    if (
         text === undefined ||
         text === null
-    ){
+    ) {
+
         return "";
+
     }
+
 
     return String(text)
 
-    .replace(/&/g,"&amp;")
+        .replace(
+            /&/g,
+            "&amp;"
+        )
 
-    .replace(/</g,"&lt;")
+        .replace(
+            /</g,
+            "&lt;"
+        )
 
-    .replace(/>/g,"&gt;")
+        .replace(
+            />/g,
+            "&gt;"
+        )
 
-    .replace(/"/g,"&quot;")
+        .replace(
+            /"/g,
+            "&quot;"
+        )
 
-    .replace(/'/g,"&#039;");
+        .replace(
+            /'/g,
+            "&#039;"
+        );
 
 }
 
