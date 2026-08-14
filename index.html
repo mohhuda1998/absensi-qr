@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Test Live Camera</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f3f4f6;
+    }
+
+    .box {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+    }
+
+    video {
+      width: 100%;
+      margin-top: 20px;
+      border-radius: 12px;
+      background: black;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      margin-top: 15px;
+      border: none;
+      border-radius: 10px;
+      background: #1976d2;
+      color: white;
+      font-size: 18px;
+    }
+
+    #status {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 10px;
+      background: #eeeeee;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+
+  <h2>📷 TEST LIVE CAMERA</h2>
+
+  <p>
+    Tes kamera melalui GitHub Pages
+  </p>
+
+  <button onclick="bukaKamera()">
+    📷 BUKA KAMERA
+  </button>
+
+  <video
+    id="kamera"
+    autoplay
+    playsinline
+    muted>
+  </video>
+
+  <div id="status">
+    Kamera belum dijalankan.
+  </div>
+
+</div>
+
+
+<script>
+
+async function bukaKamera() {
+
+  const status =
+    document.getElementById("status");
+
+  const video =
+    document.getElementById("kamera");
+
+  status.innerHTML =
+    "⏳ Meminta izin kamera...";
+
+  try {
+
+    const stream =
+      await navigator.mediaDevices.getUserMedia({
+
+        video: {
+          facingMode: {
+            ideal: "environment"
+          }
+        },
+
+        audio: false
+
+      });
+
+    video.srcObject = stream;
+
+    await video.play();
+
+    status.innerHTML =
+      "✅ <b>LIVE CAMERA BERHASIL!</b>";
+
+  }
+
+  catch(error) {
+
+    console.error(error);
+
+    status.innerHTML =
+      "❌ Kamera gagal<br><br>" +
+      "<b>Error:</b> " +
+      error.name +
+      "<br><br>" +
+      error.message;
+
+  }
+
+}
+
+</script>
+
+</body>
+</html>
