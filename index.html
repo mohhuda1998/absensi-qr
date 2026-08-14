@@ -7,7 +7,8 @@
 
 <title>Absensi QR</title>
 
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://unpkg.com/html5-qrcode"
+        type="text/javascript"></script>
 
 <style>
 
@@ -96,7 +97,7 @@ button {
 }
 
 .student div {
-  margin: 6px 0;
+  margin: 7px 0;
 }
 
 .hidden {
@@ -119,41 +120,46 @@ Scan QR siswa untuk melakukan absensi
 
 <div id="reader"></div>
 
-<div id="status" class="status info">
+<div id="status"
+     class="status info">
 📷 Tekan tombol untuk membuka kamera
 </div>
 
-<div id="hasil" class="student hidden"></div>
+<div id="hasil"
+     class="student hidden">
+</div>
 
-<button onclick="mulaiScanner()" id="btnScan">
+<button onclick="mulaiScanner()">
 📷 MULAI SCAN
 </button>
 
 </div>
 
+
 <script>
 
-// ======================================
-// URL APPS SCRIPT ANDA
-// ======================================
+// ==================================================
+// APPS SCRIPT BARU
+// ==================================================
 
 const API_URL =
-"https://script.google.com/macros/s/AKfycby9XNFEBlTBkNBCiTxGMRmwQ8Y6J93E7w869xR3VTBx41Mow2POhMffDVzwUgCqjrR7iA/exec";
+"https://script.google.com/macros/s/AKfycbwd3HoNTw4igYBKxjsJoNuQtWQmprQuSAcj32nLiUl3hYZU61Yb14LbTXnIq-5IwYYgdg/exec";
 
 
-// ======================================
+// ==================================================
 // VARIABEL
-// ======================================
+// ==================================================
 
 let scanner = null;
+
 let sedangProses = false;
 
 
-// ======================================
+// ==================================================
 // STATUS
-// ======================================
+// ==================================================
 
-function setStatus(pesan, tipe) {
+function setStatus(pesan, tipe = "info") {
 
   const el =
     document.getElementById("status");
@@ -161,13 +167,14 @@ function setStatus(pesan, tipe) {
   el.innerHTML = pesan;
 
   el.className =
-    "status " + (tipe || "info");
+    "status " + tipe;
+
 }
 
 
-// ======================================
-// MULAI SCANNER
-// ======================================
+// ==================================================
+// MULAI KAMERA
+// ==================================================
 
 function mulaiScanner() {
 
@@ -194,7 +201,9 @@ function mulaiScanner() {
   scanner.start(
 
     {
-      facingMode: "environment"
+      facingMode: {
+        ideal: "environment"
+      }
     },
 
     {
@@ -203,7 +212,9 @@ function mulaiScanner() {
       qrbox: {
         width: 250,
         height: 250
-      }
+      },
+
+      aspectRatio: 1
     },
 
     function(decodedText) {
@@ -214,13 +225,18 @@ function mulaiScanner() {
 
       sedangProses = true;
 
+      console.log(
+        "QR TERBACA:",
+        decodedText
+      );
+
       prosesQR(decodedText);
 
     },
 
     function(errorMessage) {
 
-      // Abaikan error scanner sementara
+      // Abaikan error pembacaan QR
 
     }
 
@@ -252,14 +268,16 @@ function mulaiScanner() {
 }
 
 
-// ======================================
+// ==================================================
 // PROSES QR
-// ======================================
+// ==================================================
 
 function prosesQR(kode) {
 
   setStatus(
-    "⏳ Memeriksa QR...",
+    "⏳ QR terbaca: " +
+    escapeHtml(kode) +
+    "<br>Memeriksa data...",
     "info"
   );
 
@@ -268,23 +286,23 @@ function prosesQR(kode) {
 
     scanner.stop()
 
-    .then(function() {
+      .then(function() {
 
-      scanner.clear();
+        scanner.clear();
 
-      scanner = null;
+        scanner = null;
 
-      kirimKeServer(kode);
+        kirimKeServer(kode);
 
-    })
+      })
 
-    .catch(function() {
+      .catch(function() {
 
-      scanner = null;
+        scanner = null;
 
-      kirimKeServer(kode);
+        kirimKeServer(kode);
 
-    });
+      });
 
   }
 
@@ -297,19 +315,24 @@ function prosesQR(kode) {
 }
 
 
-// ======================================
+// ==================================================
 // KIRIM KE APPS SCRIPT
-// ======================================
+// ==================================================
 
 function kirimKeServer(kode) {
 
   const callbackName =
-    "callbackAbsensi_" +
+    "absensiCallback_" +
     Date.now();
 
 
   window[callbackName] =
     function(data) {
+
+      console.log(
+        "RESPON SERVER:",
+        data
+      );
 
       tampilHasil(data);
 
@@ -335,7 +358,7 @@ function kirimKeServer(kode) {
     function() {
 
       setStatus(
-        "❌ Tidak dapat terhubung ke server.",
+        "❌ Tidak dapat terhubung ke server Apps Script.",
         "error"
       );
 
@@ -354,9 +377,9 @@ function kirimKeServer(kode) {
 }
 
 
-// ======================================
-// HASIL ABSENSI
-// ======================================
+// ==================================================
+// HASIL
+// ==================================================
 
 function tampilHasil(data) {
 
@@ -377,15 +400,30 @@ function tampilHasil(data) {
 
     hasil.innerHTML = `
 
-      <div><b>ID:</b> ${escapeHtml(data.id)}</div>
+      <div>
+        <b>ID:</b>
+        ${escapeHtml(data.id)}
+      </div>
 
-      <div><b>Nama:</b> ${escapeHtml(data.nama)}</div>
+      <div>
+        <b>Nama:</b>
+        ${escapeHtml(data.nama)}
+      </div>
 
-      <div><b>Kelas:</b> ${escapeHtml(data.kelas)}</div>
+      <div>
+        <b>Kelas:</b>
+        ${escapeHtml(data.kelas)}
+      </div>
 
-      <div><b>Tanggal:</b> ${escapeHtml(data.tanggal)}</div>
+      <div>
+        <b>Tanggal:</b>
+        ${escapeHtml(data.tanggal)}
+      </div>
 
-      <div><b>Jam:</b> ${escapeHtml(data.jam)}</div>
+      <div>
+        <b>Jam:</b>
+        ${escapeHtml(data.jam)}
+      </div>
 
     `;
 
@@ -412,8 +450,8 @@ function tampilHasil(data) {
       </div>
 
       <div>
-        <b>Status:</b>
-        Sudah melakukan absensi hari ini.
+        Siswa ini sudah melakukan
+        absensi hari ini.
       </div>
 
     `;
@@ -450,9 +488,9 @@ function tampilHasil(data) {
 }
 
 
-// ======================================
+// ==================================================
 // SCAN LAGI
-// ======================================
+// ==================================================
 
 function resetScanner() {
 
@@ -473,9 +511,9 @@ function resetScanner() {
 }
 
 
-// ======================================
-// KEAMANAN HTML
-// ======================================
+// ==================================================
+// KEAMANAN
+// ==================================================
 
 function escapeHtml(text) {
 
