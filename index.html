@@ -1,21 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Absensi QR</title>
 
-<script src="https://unpkg.com/html5-qrcode"
-        type="text/javascript"></script>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
 <style>
-
-* {
-  box-sizing: border-box;
-}
-
 body {
   margin: 0;
   padding: 15px;
@@ -27,14 +20,13 @@ body {
   max-width: 500px;
   margin: auto;
   background: white;
-  border-radius: 18px;
   padding: 20px;
+  border-radius: 18px;
   box-shadow: 0 4px 15px rgba(0,0,0,.12);
 }
 
 h1 {
   text-align: center;
-  margin-top: 5px;
 }
 
 .subtitle {
@@ -49,11 +41,15 @@ h1 {
 
 .status {
   margin-top: 20px;
-  padding: 16px;
+  padding: 15px;
   border-radius: 12px;
   text-align: center;
   font-weight: bold;
-  background: #eeeeee;
+}
+
+.info {
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 .success {
@@ -71,11 +67,6 @@ h1 {
   color: #92400e;
 }
 
-.info {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
 button {
   width: 100%;
   padding: 14px;
@@ -90,20 +81,14 @@ button {
 
 .student {
   margin-top: 15px;
-  text-align: left;
-  background: #f8fafc;
   padding: 15px;
+  background: #f8fafc;
   border-radius: 10px;
-}
-
-.student div {
-  margin: 7px 0;
 }
 
 .hidden {
   display: none;
 }
-
 </style>
 
 </head>
@@ -120,74 +105,61 @@ Scan QR siswa untuk melakukan absensi
 
 <div id="reader"></div>
 
-<div id="status"
-     class="status info">
-📷 Tekan tombol untuk membuka kamera
+<div id="status" class="status info">
+📷 Tekan MULAI SCAN
 </div>
 
-<div id="hasil"
-     class="student hidden">
-</div>
+<div id="hasil" class="student hidden"></div>
 
-<button onclick="mulaiScanner()">
+<button onclick="mulaiKamera()">
 📷 MULAI SCAN
 </button>
 
 </div>
 
-
 <script>
 
-// ==================================================
+// =================================================
 // APPS SCRIPT BARU
-// ==================================================
+// =================================================
 
 const API_URL =
 "https://script.google.com/macros/s/AKfycbwd3HoNTw4igYBKxjsJoNuQtWQmprQuSAcj32nLiUl3hYZU61Yb14LbTXnIq-5IwYYgdg/exec";
 
 
-// ==================================================
+// =================================================
 // VARIABEL
-// ==================================================
+// =================================================
 
 let scanner = null;
+let sedangScan = false;
 
-let sedangProses = false;
 
-
-// ==================================================
+// =================================================
 // STATUS
-// ==================================================
+// =================================================
 
-function setStatus(pesan, tipe = "info") {
+function setStatus(text, type) {
 
-  const el =
-    document.getElementById("status");
+  const el = document.getElementById("status");
 
-  el.innerHTML = pesan;
+  el.innerHTML = text;
 
-  el.className =
-    "status " + tipe;
-
+  el.className = "status " + type;
 }
 
 
-// ==================================================
-// MULAI KAMERA
-// ==================================================
+// =================================================
+// KAMERA
+// =================================================
 
-function mulaiScanner() {
+function mulaiKamera() {
 
-  if (scanner) {
+  if (scanner !== null) {
     return;
   }
 
-  sedangProses = false;
-
-  document
-    .getElementById("hasil")
-    .classList
-    .add("hidden");
+  sedangScan = false;
 
   setStatus(
     "⏳ Membuka kamera...",
@@ -201,42 +173,35 @@ function mulaiScanner() {
   scanner.start(
 
     {
-      facingMode: {
-        ideal: "environment"
-      }
+      facingMode: "environment"
     },
 
     {
       fps: 10,
 
-      qrbox: {
-        width: 250,
-        height: 250
-      },
-
-      aspectRatio: 1
+      qrbox: 250
     },
 
     function(decodedText) {
 
-      if (sedangProses) {
+      if (sedangScan) {
         return;
       }
 
-      sedangProses = true;
+      sedangScan = true;
 
       console.log(
-        "QR TERBACA:",
+        "QR:",
         decodedText
       );
 
-      prosesQR(decodedText);
+      scanBerhasil(decodedText);
 
     },
 
     function(errorMessage) {
 
-      // Abaikan error pembacaan QR
+      // abaikan error scanning
 
     }
 
@@ -253,12 +218,16 @@ function mulaiScanner() {
 
   .catch(function(error) {
 
-    console.error(error);
+    console.error(
+      "CAMERA ERROR:",
+      error
+    );
 
     scanner = null;
 
     setStatus(
-      "❌ Kamera gagal dibuka<br><br>" +
+      "❌ KAMERA GAGAL DIBUKA<br><br>" +
+      "Error: " +
       error,
       "error"
     );
@@ -268,16 +237,14 @@ function mulaiScanner() {
 }
 
 
-// ==================================================
-// PROSES QR
-// ==================================================
+// =================================================
+// QR BERHASIL DIBACA
+// =================================================
 
-function prosesQR(kode) {
+function scanBerhasil(kode) {
 
   setStatus(
-    "⏳ QR terbaca: " +
-    escapeHtml(kode) +
-    "<br>Memeriksa data...",
+    "⏳ QR TERBACA<br>Memeriksa server...",
     "info"
   );
 
@@ -315,28 +282,28 @@ function prosesQR(kode) {
 }
 
 
-// ==================================================
+// =================================================
 // KIRIM KE APPS SCRIPT
-// ==================================================
+// =================================================
 
 function kirimKeServer(kode) {
 
-  const callbackName =
-    "absensiCallback_" +
+  const callback =
+    "absensi_" +
     Date.now();
 
 
-  window[callbackName] =
+  window[callback] =
     function(data) {
 
       console.log(
-        "RESPON SERVER:",
+        "SERVER:",
         data
       );
 
-      tampilHasil(data);
+      tampilkanHasil(data);
 
-      delete window[callbackName];
+      delete window[callback];
 
     };
 
@@ -351,21 +318,21 @@ function kirimKeServer(kode) {
     "&id=" +
     encodeURIComponent(kode) +
     "&callback=" +
-    callbackName;
+    callback;
 
 
   script.onerror =
     function() {
 
       setStatus(
-        "❌ Tidak dapat terhubung ke server Apps Script.",
+        "❌ TIDAK TERHUBUNG KE SERVER",
         "error"
       );
 
-      delete window[callbackName];
+      delete window[callback];
 
       setTimeout(
-        resetScanner,
+        mulaiLagi,
         3000
       );
 
@@ -377,11 +344,11 @@ function kirimKeServer(kode) {
 }
 
 
-// ==================================================
+// =================================================
 // HASIL
-// ==================================================
+// =================================================
 
-function tampilHasil(data) {
+function tampilkanHasil(data) {
 
   const hasil =
     document.getElementById("hasil");
@@ -400,30 +367,11 @@ function tampilHasil(data) {
 
     hasil.innerHTML = `
 
-      <div>
-        <b>ID:</b>
-        ${escapeHtml(data.id)}
-      </div>
-
-      <div>
-        <b>Nama:</b>
-        ${escapeHtml(data.nama)}
-      </div>
-
-      <div>
-        <b>Kelas:</b>
-        ${escapeHtml(data.kelas)}
-      </div>
-
-      <div>
-        <b>Tanggal:</b>
-        ${escapeHtml(data.tanggal)}
-      </div>
-
-      <div>
-        <b>Jam:</b>
-        ${escapeHtml(data.jam)}
-      </div>
+      <b>ID:</b> ${aman(data.id)}<br>
+      <b>Nama:</b> ${aman(data.nama)}<br>
+      <b>Kelas:</b> ${aman(data.kelas)}<br>
+      <b>Tanggal:</b> ${aman(data.tanggal)}<br>
+      <b>Jam:</b> ${aman(data.jam)}
 
     `;
 
@@ -439,20 +387,11 @@ function tampilHasil(data) {
 
     hasil.innerHTML = `
 
-      <div>
-        <b>Nama:</b>
-        ${escapeHtml(data.nama)}
-      </div>
+      <b>Nama:</b> ${aman(data.nama)}<br>
+      <b>Kelas:</b> ${aman(data.kelas)}<br><br>
 
-      <div>
-        <b>Kelas:</b>
-        ${escapeHtml(data.kelas)}
-      </div>
-
-      <div>
-        Siswa ini sudah melakukan
-        absensi hari ini.
-      </div>
+      Siswa sudah melakukan
+      absensi hari ini.
 
     `;
 
@@ -466,60 +405,52 @@ function tampilHasil(data) {
     );
 
 
-    hasil.innerHTML = `
-
-      <div>
-        ${escapeHtml(
-          data.message ||
-          "QR tidak valid."
-        )}
-      </div>
-
-    `;
+    hasil.innerHTML =
+      aman(data.message);
 
   }
 
 
   setTimeout(
-    resetScanner,
-    3500
+    mulaiLagi,
+    4000
   );
 
 }
 
 
-// ==================================================
-// SCAN LAGI
-// ==================================================
+// =================================================
+// MULAI SCAN LAGI
+// =================================================
 
-function resetScanner() {
+function mulaiLagi() {
 
   document
     .getElementById("hasil")
     .classList
     .add("hidden");
 
-  sedangProses = false;
+  sedangScan = false;
 
   setStatus(
-    "📷 Siap scan siswa berikutnya.",
+    "📷 Siap scan berikutnya",
     "info"
   );
 
-  mulaiScanner();
+  scanner = null;
 
 }
 
 
-// ==================================================
-// KEAMANAN
-// ==================================================
+// =================================================
+// AMANKAN TEKS
+// =================================================
 
-function escapeHtml(text) {
+function aman(text) {
 
   if (
-    text === undefined ||
-    text === null
+    text === null ||
+    text === undefined
   ) {
     return "";
   }
